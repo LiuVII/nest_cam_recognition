@@ -1,4 +1,5 @@
 env
 test.py
+*.pyc
 snapshots
 credentials.json
