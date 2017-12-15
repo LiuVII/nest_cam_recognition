@@ -1,2 +1,10 @@
 flask
 requests
+numpy
+scipy
+matplotlib
+scikit-image
+scikit-learn
+ipython
+dlib
+face_recognition
