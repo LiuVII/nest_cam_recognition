@@ -16,6 +16,8 @@ port = 5000
 
 snapshot_dir = "./snapshots"
 known_faces_dir = "./known_faces"
+results_dir = "./results"
+unknown = "unknown"
 
 # OAuth2 URLs
 nest_auth_url = 'https://home.nest.com/login/oauth2'
