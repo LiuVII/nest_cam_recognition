@@ -1,30 +1,15 @@
-import json
 import sys
 import os
 import select
-import time
-from lib import nest_lib
-import settings
-from requests import request, get
-from datetime import datetime
 from PIL import Image
 from io import BytesIO
 import face_recognition
 import glob
 import shutil
 
-def set_dirs(dirs):
-    for dr in dirs:
-        if not os.path.exists(dr):
-            os.makedirs(dr)
-
-def save_result(file_name, name, results_dir=settings.results_dir):
-    save_dir = "{0}/{1}".format(results_dir, name)
-    set_dirs([save_dir])
-    shutil.copy(file_name, save_dir)
-
-def get_name_tag(file_name):
-    return file_name.split('/')[-1].split('.')[0].split('_')[0]
+from lib import nest_lib
+from lib import data_utils
+import settings
 
 def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=True):
     valid_img_types = [".jpg",".gif",".png"]
@@ -49,7 +34,7 @@ def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=Tr
     compare_results = []
     unknown_files = []
     unknown_faces = get_faces(settings.snapshot_dir, unknown_files, remove)
-    name_tags = [get_name_tag(file_name) for file_name in file_names]
+    name_tags = [data_utils.get_name_tag(file_name) for file_name in file_names]
     for i in range(len(unknown_faces)):
         unknown_face = unknown_faces[i]
         res = face_recognition.compare_faces(known_faces, unknown_face)
@@ -57,77 +42,15 @@ def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=Tr
         compare_results.append(name_res)
         if save_res:
             print("{0}:|{1}|{2}|".format(i, unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown))
-            save_result(unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown) 
+            data_utils.save_result(unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown) 
     if move:
         shutil.rmtree(settings.snapshot_dir)
-        set_dirs([settings.snapshot_dir])
+        data_utils.set_dirs([settings.snapshot_dir])
     return compare_results
-
-def get_camera_url(nest_api_url=settings.nest_api_url):
-    return "{0}/devices/cameras/".format(nest_api_url)
-
-def get_snapshot_url(device_id, nest_api_url=settings.nest_api_url):
-    return "{0}/devices/cameras/{1}/snapshot_url".format(nest_api_url, device_id)
-
-def get_action_url(device_id, nest_api_url=settings.nest_api_url):
-    return "{0}/devices/cameras/{1}/last_event".format(nest_api_url, device_id)
-
-def get_camera_id(token):
-    try:
-        cameras = list(nest_lib.get_data(token, get_camera_url())["results"].keys())
-        return cameras[0]
-    except:
-        print('No cameras were found')
-        return ""
-
-
-def split_animated(image, name_prefix):
-
-    def iter_frames(image):
-        try:
-            palette = image.getpalette()
-            i = 0
-            while 1:
-                image.seek(i)
-                image_frame = image.copy()
-                image_frame.putpalette(palette)
-                yield image_frame
-                i += 1
-        except EOFError:
-            pass
-
-    for i, frame in enumerate(iter_frames(image)):
-        print("{0}_{1}.png".format(name_prefix, i))
-        frame.save("{0}_{1}.png".format(name_prefix, i), **frame.info)
-
-def record_data(img_url, img_type, dir_name=settings.snapshot_dir):
-    response = get(img_url)
-    if response.status_code == 200:
-        img_data = response.content
-        if len(img_data) > 0:
-            try:
-                current_time = time.time()
-                string_time = datetime.fromtimestamp(current_time).strftime('%Y%m%d-%H%M%S-%f')[:-4]
-                if img_type == "jpg":
-                    img_name = "{0}/{1}.jpg".format(dir_name, string_time)
-                    print("snapshot", img_name)
-                    with open(img_name, 'wb') as handler:
-                        handler.write(img_data)
-                elif img_type == "gif":
-                    img_name_prefix = "{0}/{1}".format(dir_name, string_time)
-                    img = Image.open(BytesIO(img_data))
-                    split_animated(img, img_name_prefix)
-            except:
-                print("Error: something went wrong when saving the image")
-        else:
-            print("Warning: camera is most likely offline")
-    else:
-        print("Warning: response status from image url: {0}".format(response.status_code))
-    return
 
 def make_action(token, device_id, known_faces, file_names):
     try:
-        prev_action_time = nest_lib.get_data(token, get_action_url(device_id))["results"]["start_time"]
+        prev_action_time = get_action_time(token_ device_id)
     except:
         print("Info: No prior action stored, resetting to empty")
     # prev_action_time = ""
@@ -147,20 +70,20 @@ def make_action(token, device_id, known_faces, file_names):
             known_faces = get_faces(file_names=file_names, remove=False)
         elif key == 'r' or key == 's':
             try:
-                img_url = nest_lib.get_data(token, get_snapshot_url(device_id))["results"]
-                record_data(img_url, "jpg")
+                img_url = nest_lib.get_data(token, nest_lib.get_snapshot_url(device_id))["results"]
+                data_utils.record_data(img_url, "jpg")
             except:
                 print("Error: unknown in record_data")
             if key == 'r':
                 print(recognize_faces(known_faces, file_names))
         elif key == 'a' or key == 'm' or key == 't':
-            last_event_data = nest_lib.get_data(token, get_action_url(device_id))["results"]
+            last_event_data = nest_lib.get_data(token, nest_lib.get_action_url(device_id))["results"]
             if key == 't'or last_event_data["has_person"] and last_event_data["start_time"] != prev_action_time:
                 if key != 't':
                     prev_action_time = last_event_data["start_time"]
                 print("someone detected")
                 try:
-                    record_data(last_event_data["animated_image_url"], "gif")
+                    data_utils.record_data(last_event_data["animated_image_url"], "gif")
                 except:
                     print("Error: unknown in record_data")
                 if key == 'a':
@@ -168,23 +91,9 @@ def make_action(token, device_id, known_faces, file_names):
             else:
                 print("Info: no new action or person detected")
 
-
-with open('credentials.json', 'r+') as credfile:
-    json_str = credfile.read()
-    json_data = json.loads(json_str)
-    
-    #store token if none is present in credentials
-    if not json_data["token"]:
-        token = nest_lib.get_access(settings.authorization_code)
-        json_data["token"] = token
-        credfile.seek(0)
-        json.dump(json_data, credfile)
-        credfile.truncate()
-    token = json_data["token"]
-
-#data = nest_lib.get_data(token=token)
-set_dirs([settings.snapshot_dir, settings.known_faces_dir, settings.results_dir])
-device_id = get_camera_id(token)
+token = data_utils.get_token()
+data_utils.set_dirs([settings.snapshot_dir, settings.known_faces_dir, settings.results_dir])
+device_id = nest_lib.get_camera_id(token)
 file_names = []
 known_faces = get_faces(file_names=file_names, remove=False)
 make_action(token, device_id, known_faces, file_names)

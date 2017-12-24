@@ -13,6 +13,29 @@ nest_api_url = settings.nest_api_url
 product_id = settings.product_id
 product_secret = settings.product_secret
 
+# Custom implementation
+def get_action_time(token, device_id):
+    return get_data(token, get_action_url(device_id))["results"]["start_time"]
+
+def get_camera_url(url=nest_api_url):
+    return "{0}/devices/cameras/".format(url)
+
+def get_snapshot_url(device_id, url=nest_api_url):
+    return "{0}/devices/cameras/{1}/snapshot_url".format(url, device_id)
+
+def get_action_url(device_id, url=nest_api_url):
+    return "{0}/devices/cameras/{1}/last_event".format(url, device_id)
+
+def get_camera_id(token):
+    try:
+        cameras = list(get_data(token, get_camera_url())["results"].keys())
+        return cameras[0]
+    except:
+        print('No cameras were found')
+        return ""
+
+# Nest provided implementation
+
 def get_url():
     return authorization_url()
 
