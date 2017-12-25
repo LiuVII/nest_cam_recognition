@@ -17,6 +17,7 @@ port = 5000
 snapshot_dir = "./snapshots"
 known_faces_dir = "./known_faces"
 results_dir = "./results"
+interactions_dir = "./interactions"
 unknown = "unknown"
 
 # OAuth2 URLs

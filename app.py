@@ -9,6 +9,7 @@ from collections import Counter, defaultdict
 from lib import nest_lib
 from lib import data_utils
 import settings
+import interaction
 
 
 CONFIDENCE_OVERALL = 0.3
@@ -50,7 +51,6 @@ def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=Tr
             name_res = [name_tags[j] for j in range(len(known_faces)) if res[j]]
             compare_results.append(name_res)
             if save_res:
-                # print("{0}:|{1}|{2}|".format(i, unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown))
                 data_utils.save_result(unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown) 
         if move:
             shutil.rmtree(settings.snapshot_dir)
@@ -81,7 +81,7 @@ def get_persons(compare_results):
         print("Info: a person wasn't recognized")
         return ["unknown"]
 
-
+#TODO: recieve a callback from nest on detected action
 def make_action(token, device_id, known_faces, file_names):
     try:
         prev_action_time = nest_lib.get_action_time(token, device_id)
@@ -90,6 +90,7 @@ def make_action(token, device_id, known_faces, file_names):
     prev_action_time = ""
 
     print("Info: camera is ready")
+    #TODO: make this async
     while True:
         key = 0
         while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
@@ -98,6 +99,7 @@ def make_action(token, device_id, known_faces, file_names):
                 exit(0)
 
         if key == 'q':
+            print("Info: quitting...")
             return
         
         elif key == 'l':
@@ -120,13 +122,19 @@ def make_action(token, device_id, known_faces, file_names):
                 if key == 'a':
                     compare_results = recognize_faces(known_faces, file_names)
                     persons = get_persons(compare_results)
+                    interaction.interact(persons)
             else:
                 print("Info: no new action or person detected")
 
 
+print("Info: started")
 token = data_utils.get_token()
+print("Info: got token")
 data_utils.set_dirs([settings.snapshot_dir, settings.known_faces_dir, settings.results_dir])
+print("Info: dirs setup")
 device_id = nest_lib.get_camera_id(token)
+print("Info: got camera id")
 file_names = []
 known_faces = get_faces(file_names=file_names, remove=False)
 make_action(token, device_id, known_faces, file_names)
+print("Info: finished")

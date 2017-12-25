@@ -8,3 +8,4 @@ scikit-learn
 ipython
 dlib
 face_recognition
+gtts
