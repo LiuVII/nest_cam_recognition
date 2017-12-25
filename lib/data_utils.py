@@ -17,7 +17,7 @@ def get_token():
         json_str = credfile.read()
         json_data = json.loads(json_str)
 
-        #store token if none is present in credentials
+        # Store token if none is present in credentials
         if not json_data["token"]:
             token = nest_lib.get_access(settings.authorization_code)
             json_data["token"] = token

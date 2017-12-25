@@ -81,7 +81,7 @@ def get_persons(compare_results):
         print("Info: a person wasn't recognized")
         return ["unknown"]
 
-#TODO: recieve a callback from nest on detected action
+# TODO: recieve a callback from nest on detected action
 def make_action(token, device_id, known_faces, file_names):
     try:
         prev_action_time = nest_lib.get_action_time(token, device_id)
@@ -90,7 +90,7 @@ def make_action(token, device_id, known_faces, file_names):
     prev_action_time = ""
 
     print("Info: camera is ready")
-    #TODO: make this async
+    # TODO: make this async
     while True:
         key = 0
         while sys.stdin in select.select([sys.stdin], [], [], 0)[0]:
