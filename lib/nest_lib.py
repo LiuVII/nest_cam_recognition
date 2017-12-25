@@ -14,9 +14,6 @@ product_id = settings.product_id
 product_secret = settings.product_secret
 
 # Custom implementation
-def get_action_time(token, device_id):
-    return get_data(token, get_action_url(device_id))["results"]["start_time"]
-
 def get_camera_url(url=nest_api_url):
     return "{0}/devices/cameras/".format(url)
 
@@ -33,6 +30,9 @@ def get_camera_id(token):
     except:
         print('No cameras were found')
         return ""
+
+def get_action_time(token, device_id):
+    return get_data(token, get_action_url(device_id))["results"]["start_time"]
 
 # Nest provided implementation
 

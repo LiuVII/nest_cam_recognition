@@ -1,8 +1,6 @@
 import sys
 import os
 import select
-from PIL import Image
-from io import BytesIO
 import face_recognition
 import glob
 import shutil
@@ -10,6 +8,8 @@ import shutil
 from lib import nest_lib
 from lib import data_utils
 import settings
+
+ACCURACY_THRESHOLD = 0.3
 
 def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=True):
     valid_img_types = [".jpg",".gif",".png"]
@@ -24,7 +24,7 @@ def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=True):
             elif len(img_encoded) == 0 and remove:
                 os.remove(img_file)
             faces += img_encoded
-    print("Total number of faces in {0}: {1}".format(faces_dir, len(faces)))
+    print("Info: total number of faces in {0}: {1}".format(faces_dir, len(faces)))
     return faces
 
 def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=True):
@@ -41,7 +41,7 @@ def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=Tr
         name_res = [name_tags[j] for j in range(len(known_faces)) if res[j]]
         compare_results.append(name_res)
         if save_res:
-            print("{0}:|{1}|{2}|".format(i, unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown))
+            # print("{0}:|{1}|{2}|".format(i, unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown))
             data_utils.save_result(unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown) 
     if move:
         shutil.rmtree(settings.snapshot_dir)
@@ -50,10 +50,10 @@ def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=Tr
 
 def make_action(token, device_id, known_faces, file_names):
     try:
-        prev_action_time = get_action_time(token_ device_id)
+        prev_action_time = nest_lib.get_action_time(token, device_id)
     except:
         print("Info: No prior action stored, resetting to empty")
-    # prev_action_time = ""
+    prev_action_time = ""
 
     print("Info: camera is ready")
     while True:
@@ -65,27 +65,24 @@ def make_action(token, device_id, known_faces, file_names):
 
         if key == 'q':
             return
+        
         elif key == 'l':
             file_names = []
             known_faces = get_faces(file_names=file_names, remove=False)
+        
         elif key == 'r' or key == 's':
-            try:
-                img_url = nest_lib.get_data(token, nest_lib.get_snapshot_url(device_id))["results"]
-                data_utils.record_data(img_url, "jpg")
-            except:
-                print("Error: unknown in record_data")
+            img_url = nest_lib.get_data(token, nest_lib.get_snapshot_url(device_id))["results"]
+            data_utils.record_data(img_url, "jpg")
             if key == 'r':
                 print(recognize_faces(known_faces, file_names))
+        
         elif key == 'a' or key == 'm' or key == 't':
             last_event_data = nest_lib.get_data(token, nest_lib.get_action_url(device_id))["results"]
-            if key == 't'or last_event_data["has_person"] and last_event_data["start_time"] != prev_action_time:
+            if key == 't' or (last_event_data["has_person"] and last_event_data["start_time"] != prev_action_time):
+                print("Info: someone detected")
+                data_utils.record_data(last_event_data["animated_image_url"], "gif")
                 if key != 't':
                     prev_action_time = last_event_data["start_time"]
-                print("someone detected")
-                try:
-                    data_utils.record_data(last_event_data["animated_image_url"], "gif")
-                except:
-                    print("Error: unknown in record_data")
                 if key == 'a':
                     print(recognize_faces(known_faces, file_names))
             else:

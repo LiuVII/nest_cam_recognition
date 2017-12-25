@@ -5,6 +5,7 @@ import shutil
 import time
 from datetime import datetime
 from PIL import Image
+from io import BytesIO
 from requests import get
 
 import nest_lib
@@ -57,25 +58,28 @@ def split_animated(image, name_prefix):
         frame.save("{0}_{1}.png".format(name_prefix, i), **frame.info)
 
 def record_data(img_url, img_type, dir_name=settings.snapshot_dir):
-    response = get(img_url)
-    if response.status_code == 200:
-        img_data = response.content
-        if len(img_data) > 0:
-            try:
-                current_time = time.time()
-                string_time = datetime.fromtimestamp(current_time).strftime('%Y%m%d-%H%M%S-%f')[:-4]
-                if img_type == "jpg":
-                    img_name = "{0}/{1}.jpg".format(dir_name, string_time)
-                    print("snapshot", img_name)
-                    with open(img_name, 'wb') as handler:
-                        handler.write(img_data)
-                elif img_type == "gif":
-                    img_name_prefix = "{0}/{1}".format(dir_name, string_time)
-                    img = Image.open(BytesIO(img_data))
-                    split_animated(img, img_name_prefix)
-            except:
-                print("Error: something went wrong when saving the image")
+    try:
+        response = get(img_url)
+        if response.status_code == 200:
+            img_data = response.content
+            if len(img_data) > 0:
+                try:
+                    current_time = time.time()
+                    string_time = datetime.fromtimestamp(current_time).strftime('%Y%m%d-%H%M%S-%f')[:-4]
+                    if img_type == "jpg":
+                        img_name = "{0}/{1}.jpg".format(dir_name, string_time)
+                        print("snapshot", img_name)
+                        with open(img_name, 'wb') as handler:
+                            handler.write(img_data)
+                    elif img_type == "gif":
+                        img_name_prefix = "{0}/{1}".format(dir_name, string_time)
+                        img = Image.open(BytesIO(img_data))
+                        split_animated(img, img_name_prefix)
+                except:
+                    print("Error: something went wrong when saving the image")
+            else:
+                print("Warning: camera is most likely offline")
         else:
-            print("Warning: camera is most likely offline")
-    else:
-        print("Warning: response status from image url: {0}".format(response.status_code))
+            print("Warning: response status from image url: {0}".format(response.status_code))
+    except:
+        print("Error: unknown in record_data")
