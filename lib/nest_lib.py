@@ -4,6 +4,7 @@ import urllib2
 
 import settings
 
+
 nest_auth_url = settings.nest_auth_url
 nest_access_token_url = settings.nest_access_token_url
 nest_api_root_url = settings.nest_api_root_url
@@ -13,15 +14,19 @@ nest_api_url = settings.nest_api_url
 product_id = settings.product_id
 product_secret = settings.product_secret
 
+
 # Custom implementation
 def get_camera_url(url=nest_api_url):
     return "{0}/devices/cameras/".format(url)
 
+
 def get_snapshot_url(device_id, url=nest_api_url):
     return "{0}/devices/cameras/{1}/snapshot_url".format(url, device_id)
 
+
 def get_action_url(device_id, url=nest_api_url):
     return "{0}/devices/cameras/{1}/last_event".format(url, device_id)
+
 
 def get_camera_id(token):
     try:
@@ -31,11 +36,12 @@ def get_camera_id(token):
         print('No cameras were found')
         return ""
 
+
 def get_action_time(token, device_id):
     return get_data(token, get_action_url(device_id))["results"]["start_time"]
 
-# Nest provided implementation
 
+# Nest provided implementation
 def get_url():
     return authorization_url()
 

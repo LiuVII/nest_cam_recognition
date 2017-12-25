@@ -4,16 +4,21 @@ import select
 import face_recognition
 import glob
 import shutil
+from collections import Counter, defaultdict
 
 from lib import nest_lib
 from lib import data_utils
 import settings
 
-ACCURACY_THRESHOLD = 0.3
+
+CONFIDENCE_OVERALL = 0.3
+CONFIDENCE_LOCAL = 0.5
+
 
 def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=True):
     valid_img_types = [".jpg",".gif",".png"]
     faces = []
+
     for img_type in valid_img_types:
         for img_file in glob.glob('{0}/*{1}'.format(faces_dir, img_type)):
             img = face_recognition.load_image_file(img_file)
@@ -24,8 +29,10 @@ def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=True):
             elif len(img_encoded) == 0 and remove:
                 os.remove(img_file)
             faces += img_encoded
+
     print("Info: total number of faces in {0}: {1}".format(faces_dir, len(faces)))
     return faces
+
 
 def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=True):
     if len(known_faces) == 0:
@@ -34,19 +41,46 @@ def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=Tr
     compare_results = []
     unknown_files = []
     unknown_faces = get_faces(settings.snapshot_dir, unknown_files, remove)
-    name_tags = [data_utils.get_name_tag(file_name) for file_name in file_names]
-    for i in range(len(unknown_faces)):
-        unknown_face = unknown_faces[i]
-        res = face_recognition.compare_faces(known_faces, unknown_face)
-        name_res = [name_tags[j] for j in range(len(known_faces)) if res[j]]
-        compare_results.append(name_res)
-        if save_res:
-            # print("{0}:|{1}|{2}|".format(i, unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown))
-            data_utils.save_result(unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown) 
-    if move:
-        shutil.rmtree(settings.snapshot_dir)
-        data_utils.set_dirs([settings.snapshot_dir])
+
+    if len(unknown_faces) > 0:
+        name_tags = [data_utils.get_name_tag(file_name) for file_name in file_names]
+        for i in range(len(unknown_faces)):
+            unknown_face = unknown_faces[i]
+            res = face_recognition.compare_faces(known_faces, unknown_face)
+            name_res = [name_tags[j] for j in range(len(known_faces)) if res[j]]
+            compare_results.append(name_res)
+            if save_res:
+                # print("{0}:|{1}|{2}|".format(i, unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown))
+                data_utils.save_result(unknown_files[i], name_res[0] if len(name_res) > 0 else settings.unknown) 
+        if move:
+            shutil.rmtree(settings.snapshot_dir)
+            data_utils.set_dirs([settings.snapshot_dir])
+    else:
+        print("Info: no faces were detected")
     return compare_results
+
+
+def get_persons(compare_results):
+    persons = []
+    probable_persons = defaultdict(int)
+
+    for compare_result in compare_results:
+        total_matches = len(compare_result)
+        if total_matches > 0:
+            (name, occurences) = Counter(compare_result).most_common(1)[0]
+            if occurences >= total_matches * CONFIDENCE_LOCAL:
+                probable_persons[name] += 1
+    for name, occurences in probable_persons.iteritems():
+        if occurences >= len(compare_results) * CONFIDENCE_OVERALL:
+            persons.append(name)
+
+    if len(persons) > 0:
+        print("Info: {0} recognized".format(", ".join(persons)))
+        return persons
+    else:
+        print("Info: a person wasn't recognized")
+        return ["unknown"]
+
 
 def make_action(token, device_id, known_faces, file_names):
     try:
@@ -69,13 +103,13 @@ def make_action(token, device_id, known_faces, file_names):
         elif key == 'l':
             file_names = []
             known_faces = get_faces(file_names=file_names, remove=False)
-        
+
         elif key == 'r' or key == 's':
             img_url = nest_lib.get_data(token, nest_lib.get_snapshot_url(device_id))["results"]
             data_utils.record_data(img_url, "jpg")
             if key == 'r':
                 print(recognize_faces(known_faces, file_names))
-        
+
         elif key == 'a' or key == 'm' or key == 't':
             last_event_data = nest_lib.get_data(token, nest_lib.get_action_url(device_id))["results"]
             if key == 't' or (last_event_data["has_person"] and last_event_data["start_time"] != prev_action_time):
@@ -84,9 +118,11 @@ def make_action(token, device_id, known_faces, file_names):
                 if key != 't':
                     prev_action_time = last_event_data["start_time"]
                 if key == 'a':
-                    print(recognize_faces(known_faces, file_names))
+                    compare_results = recognize_faces(known_faces, file_names)
+                    persons = get_persons(compare_results)
             else:
                 print("Info: no new action or person detected")
+
 
 token = data_utils.get_token()
 data_utils.set_dirs([settings.snapshot_dir, settings.known_faces_dir, settings.results_dir])

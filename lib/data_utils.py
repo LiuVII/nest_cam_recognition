@@ -11,11 +11,12 @@ from requests import get
 import nest_lib
 import settings
 
+
 def get_token():
     with open('credentials.json', 'r+') as credfile:
         json_str = credfile.read()
         json_data = json.loads(json_str)
-        
+
         #store token if none is present in credentials
         if not json_data["token"]:
             token = nest_lib.get_access(settings.authorization_code)
@@ -25,21 +26,24 @@ def get_token():
             credfile.truncate()
         return json_data["token"]
 
+
 def set_dirs(dirs):
     for dr in dirs:
         if not os.path.exists(dr):
             os.makedirs(dr)
+
 
 def save_result(file_name, name, results_dir=settings.results_dir):
     save_dir = "{0}/{1}".format(results_dir, name)
     set_dirs([save_dir])
     shutil.copy(file_name, save_dir)
 
+
 def get_name_tag(file_name):
     return file_name.split('/')[-1].split('.')[0].split('_')[0]
 
-def split_animated(image, name_prefix):
 
+def split_animated(image, name_prefix):
     def iter_frames(image):
         try:
             palette = image.getpalette()
@@ -56,6 +60,7 @@ def split_animated(image, name_prefix):
     for i, frame in enumerate(iter_frames(image)):
         print("{0}_{1}.png".format(name_prefix, i))
         frame.save("{0}_{1}.png".format(name_prefix, i), **frame.info)
+
 
 def record_data(img_url, img_type, dir_name=settings.snapshot_dir):
     try:
