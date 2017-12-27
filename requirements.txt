@@ -9,3 +9,4 @@ ipython
 dlib
 face_recognition
 gtts
+sseclient-py
