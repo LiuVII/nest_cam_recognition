@@ -3,3 +3,7 @@ test.py
 *.pyc
 snapshots
 credentials.json
+known_faces/
+results/
+interactions/
+raw/

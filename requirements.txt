@@ -10,3 +10,4 @@ dlib
 face_recognition
 gtts
 sseclient-py
+opencv-python

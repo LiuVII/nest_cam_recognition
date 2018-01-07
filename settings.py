@@ -10,6 +10,7 @@ with open('credentials.json', 'r') as credfile:
     product_id = json_data["PRODUCT_ID"]
     product_secret = json_data["PRODUCT_SECRET"]
     authorization_code = json_data["authorization_code"]
+    video_url = json_data["VIDEO_URL"]
 
 # Port number for sample application and callback URI (must be the same port)
 port = 5000  
