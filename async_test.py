@@ -3,18 +3,12 @@ import time
 import asyncio
 import aioconsole
 from concurrent.futures import FIRST_COMPLETED
+from random import randint
 
 start = time.time()
-
-
 DEFAULT_FPS = 1.0
 FRAME_PROCESS_SPEED = 2.5
-# SERVICES = (
-#     Service('read_from_input')
-#     Service('read_from_stream')
-#     Service('process_stream_data')
-#     Service('interaction')
-# )
+
 
 def tic():
     return 'at %1.2f seconds' % (time.time() - start)
@@ -31,9 +25,9 @@ async def read_from_input():
     return {"input": command}
 
 
-async def process_stream_data(frame_num):
+async def process_stream_data(frame_num, tasks):
     print("Processing frame {} | {}".format(frame_num, tic()))
-    await asyncio.sleep(FRAME_PROCESS_SPEED)
+    await asyncio.gather(*[asyncio.sleep(task) for task in tasks])
     print('Frame {} finished | {}'.format(frame_num, tic()))
     return {"data": frame_num}
 
@@ -47,7 +41,7 @@ async def interaction_(result_num):
 def parse_result(result, futures, params):
     if "frame" in result:
         if params["process"]:
-            futures.append(process_stream_data(result["frame"]))
+            futures.append(process_stream_data(result["frame"], params["tasks_time"]))
     elif "input" in result:
         command = result["input"]
         print("Command: {}".format(command))
@@ -76,10 +70,11 @@ def parse_result(result, futures, params):
 def init_params():
     return {
         "stream": False,
-        "process": True,
+        "process": False,
         "frame_num": 0,
         "data_frame": 0,
-        "fps": DEFAULT_FPS
+        "fps": DEFAULT_FPS,
+        "tasks_time": [1 for _ in range(8)]
     }
 
 
