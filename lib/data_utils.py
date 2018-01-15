@@ -1,4 +1,3 @@
-
 import json
 import os
 import shutil
@@ -8,12 +7,12 @@ from PIL import Image
 from io import BytesIO
 from requests import get
 
-import nest_lib
+from lib import nest_lib
 import settings
 
 
 def get_token():
-    with open('credentials.json', 'r+') as credfile:
+    with open('../confidential/credentials.json', 'r+') as credfile:
         json_str = credfile.read()
         json_data = json.loads(json_str)
 
@@ -34,7 +33,7 @@ def set_dirs(dirs):
 
 
 def save_result(file_name, name, results_dir=settings.results_dir):
-    save_dir = "{0}/{1}".format(results_dir, name)
+    save_dir = "{}/{}".format(results_dir, name)
     set_dirs([save_dir])
     shutil.copy(file_name, save_dir)
 
@@ -58,33 +57,36 @@ def split_animated(image, name_prefix):
             pass
 
     for i, frame in enumerate(iter_frames(image)):
-        print("{0}_{1}.png".format(name_prefix, i))
-        frame.save("{0}_{1}.png".format(name_prefix, i), **frame.info)
+        print("{}_{}.png".format(name_prefix, i))
+        frame.save("{}_{}.png".format(name_prefix, i), **frame.info)
 
+
+async def save_file_to_disk(img_data, img_type, dir_name=settings.snapshot_dir):
+    if len(img_data) > 0:
+        try:
+            current_time = time.time()
+            string_time = datetime.fromtimestamp(current_time).strftime('%Y%m%d-%H%M%S-%f')[:-4]
+            if img_type == "jpg":
+                img_name = "{}/{}.jpg".format(dir_name, string_time)
+                print("snapshot", img_name)
+                with open(img_name, 'wb') as handler:
+                    handler.write(img_data)
+            elif img_type == "gif":
+                img_name_prefix = "{}/{}".format(dir_name, string_time)
+                img = Image.open(BytesIO(img_data))
+                split_animated(img, img_name_prefix)
+        except:
+            print("Error: something went wrong when saving the image")
+    else:
+        print("Warning: camera is most likely offline")
 
 def record_data(img_url, img_type, dir_name=settings.snapshot_dir):
     try:
         response = get(img_url)
         if response.status_code == 200:
             img_data = response.content
-            if len(img_data) > 0:
-                try:
-                    current_time = time.time()
-                    string_time = datetime.fromtimestamp(current_time).strftime('%Y%m%d-%H%M%S-%f')[:-4]
-                    if img_type == "jpg":
-                        img_name = "{0}/{1}.jpg".format(dir_name, string_time)
-                        print("snapshot", img_name)
-                        with open(img_name, 'wb') as handler:
-                            handler.write(img_data)
-                    elif img_type == "gif":
-                        img_name_prefix = "{0}/{1}".format(dir_name, string_time)
-                        img = Image.open(BytesIO(img_data))
-                        split_animated(img, img_name_prefix)
-                except:
-                    print("Error: something went wrong when saving the image")
-            else:
-                print("Warning: camera is most likely offline")
+            save_file_to_disk(img_data, img_type)
         else:
-            print("Warning: response status from image url: {0}".format(response.status_code))
+            print("Warning: response status from image url: {}".format(response.status_code))
     except:
         print("Error: unknown in record_data")

@@ -3,7 +3,7 @@ import json
 
 # OAuth2 client ID and secret copied from https://console.developers.nest.com/products/(selected product)
 # Keep product ID and product secret private (don't store this in a public location).
-with open('credentials.json', 'r') as credfile:
+with open('./confidential/credentials.json', 'r') as credfile:
     json_str = credfile.read()
     json_data = json.loads(json_str)
 
@@ -20,6 +20,14 @@ known_faces_dir = "./known_faces"
 results_dir = "./results"
 interactions_dir = "./interactions"
 unknown = "unknown"
+
+# Stream
+ffmpeg_bin = "ffmpeg"
+window_name = "SigmaSpy"
+
+
+# Other
+ESC_CODE = 27
 
 # OAuth2 URLs
 nest_auth_url = 'https://home.nest.com/login/oauth2'

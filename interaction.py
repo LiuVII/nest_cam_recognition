@@ -4,21 +4,21 @@ from gtts import gTTS
 import settings
 
 
-# TODO: post slack notification
+# TODO(mf): post slack notification
 ## Send to a channel if a person detected within certain time frame
 ## Send to a channel if unknown person detected
 
 
-# TODO: use Spotify API to play theme music of a person
+# TODO(mf): use Spotify API to play theme music of a person
 
 
-# TODO: use Sigma API to send Merit
+# TODO(mf): use Sigma API to send Merit
 ## Determine type of merits and data needed
 ## Collect data
 ## Integrate Sigma API
 
 
-# TODO: send audio to nest cam
+# TODO(mf): send audio to nest cam
 ## No API provided for sending audio over so
 ## Research if one can send audio/use mic via web
 ## Check if this process can be easily automated
