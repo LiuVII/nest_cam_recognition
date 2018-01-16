@@ -10,22 +10,27 @@ import settings
 
 CONFIDENCE_OVERALL = 0.3
 CONFIDENCE_LOCAL = 0.5
+VALID_IMG_TYPES = [".jpg", ".gif", ".png"]
 
 
 async def process_frame(frame, params):
     # TODO(mf): use frame directly saving here should be async and mostly for debug purposes
     await data_utils.save_file_to_disk(frame, "jpg")
-    compare_futures = [recognize_faces([known_face], file_names, remove=remove) for known_face in known_faces]
+    compare_futures = [recognize_faces(
+        [known_face], params["file_names"], remove=params["remove"]
+    ) for known_face in params["known_faces"]]
     compare_results = await asyncio.gather(*compare_futures)
     flatten_results = [result for results in compare_results for result in results]
     persons = await get_persons(flatten_results)
     return {"process_result": persons}
 
-async def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=True):
-    valid_img_types = [".jpg",".gif",".png"]
+
+async def get_faces(file_names, faces_dir=settings.known_faces_dir, remove=True):
+    if not file_names:
+        file_names = []
     faces = []
 
-    for img_type in valid_img_types:
+    for img_type in VALID_IMG_TYPES:
         for img_file in glob.glob('{}/*{}'.format(faces_dir, img_type)):
             try:
                 img = face_recognition.load_image_file(img_file)
@@ -36,6 +41,7 @@ async def get_faces(faces_dir=settings.known_faces_dir, file_names=[], remove=Tr
                 elif len(img_encoded) == 0 and remove:
                     os.remove(img_file)
                 faces += img_encoded
+            # TODO(mf): make proper error handling
             except:
                 print("Error: failed to open and recognize single image")
 
@@ -49,7 +55,8 @@ async def recognize_faces(known_faces, file_names, save_res=True, move=True, rem
         return []
     compare_results = []
     unknown_files = []
-    unknown_faces = get_faces(settings.snapshot_dir, unknown_files, remove)
+    # TODO(mf): instead of simply awaiting run async for every unknown and gather futures
+    unknown_faces = await get_faces(unknown_files, settings.snapshot_dir, remove)
 
     if len(unknown_faces) > 0:
         name_tags = [data_utils.get_name_tag(file_name) for file_name in file_names]
@@ -77,11 +84,11 @@ async def get_persons(compare_results):
     for compare_result in compare_results:
         total_matches = len(compare_result)
         if total_matches > 0:
-            (name, occurences) = Counter(compare_result).most_common(1)[0]
-            if occurences >= total_matches * CONFIDENCE_LOCAL:
+            (name, occurrences) = Counter(compare_result).most_common(1)[0]
+            if occurrences >= total_matches * CONFIDENCE_LOCAL:
                 probable_persons[name] += 1
-    for name, occurences in probable_persons.iteritems():
-        if occurences >= len(compare_results) * CONFIDENCE_OVERALL:
+    for name, occurrences in probable_persons.items():
+        if occurrences >= len(compare_results) * CONFIDENCE_OVERALL:
             persons.append(name)
 
     if len(persons) > 0:

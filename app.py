@@ -1,7 +1,5 @@
 from concurrent.futures import FIRST_COMPLETED
 import asyncio
-import json
-import sys
 import time
 
 from lib import data_utils
@@ -30,7 +28,6 @@ async def parse_result(result, futures, params):
         print("Info: some result recieved")
 
 
-
 # TODO(mf): make a class instead of a dict
 def init_params():
     return {
@@ -41,6 +38,8 @@ def init_params():
         "frame_num": 0,
         "data_frame": 0,
         "fps": DEFAULT_FPS,
+        "known_faces": [],
+        "file_names": []
     }
 
 

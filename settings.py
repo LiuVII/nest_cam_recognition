@@ -1,4 +1,3 @@
-import os
 import json
 
 # OAuth2 client ID and secret copied from https://console.developers.nest.com/products/(selected product)

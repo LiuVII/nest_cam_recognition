@@ -19,13 +19,13 @@ async def stream_open(fps):
     cv2.namedWindow(WINDOW_NAME)
 
     stream_pipe = sp.Popen([FFMPEG_BIN, "-i", VIDEO_URL,
-               "-loglevel", "quiet", # no text output
-               "-an",   # disable audio
-               "-f", "image2pipe",
-               "-vf", "fps={}".format(fps),
-               "-pix_fmt", "bgr24",
-               "-vcodec", "rawvideo", "-"],
-               stdin = sp.PIPE, stdout = sp.PIPE)
+                            "-loglevel", "quiet",  # no text output
+                            "-an",  # disable audio
+                            "-f", "image2pipe",
+                            "-vf", "fps={}".format(fps),
+                            "-pix_fmt", "bgr24",
+                            "-vcodec", "rawvideo", "-"],
+                           stdin=sp.PIPE, stdout=sp.PIPE)
     return {"stream_pipe": stream_pipe}
 
 
@@ -42,9 +42,9 @@ def stream_close(params):
 async def stream_read(params):
     pipe = params["stream_pipe"]
     if not pipe:
-        println("Warning: stream pipe isn't set")
+        print("Warning: stream pipe isn't set")
         return {"warning": "stream pipe isn't set"}
-    
+
     try:
         # TODO(mf): communicate doesn't work here, figure out why:
         raw_image = pipe.stdout.read(FRAME_SIZE)
@@ -57,7 +57,8 @@ async def stream_read(params):
         # TODO(mf): waitKey sometimes interrupts keyboard input which stops whole app, bypass it
         cv2.waitKey(1)
         return {"frame": image}
-    
+
+    # TODO(mf): make proper error handling
     except:
         print("Error: unknown error from stream_read")
         return {"error": "unknown error from stream_read"}

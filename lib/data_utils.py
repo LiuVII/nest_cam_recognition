@@ -43,16 +43,16 @@ def get_name_tag(file_name):
 
 
 def split_animated(image, name_prefix):
-    def iter_frames(image):
+    def iter_frames(frames):
         try:
-            palette = image.getpalette()
-            i = 0
+            palette = frames.getpalette()
+            frame_num = 0
             while 1:
-                image.seek(i)
-                image_frame = image.copy()
+                frames.seek(frame_num)
+                image_frame = frames.copy()
                 image_frame.putpalette(palette)
                 yield image_frame
-                i += 1
+                frame_num += 1
         except EOFError:
             pass
 
@@ -75,12 +75,14 @@ async def save_file_to_disk(img_data, img_type, dir_name=settings.snapshot_dir):
                 img_name_prefix = "{}/{}".format(dir_name, string_time)
                 img = Image.open(BytesIO(img_data))
                 split_animated(img, img_name_prefix)
+        # TODO(mf): make proper error handling
         except:
             print("Error: something went wrong when saving the image")
     else:
         print("Warning: camera is most likely offline")
 
-def record_data(img_url, img_type, dir_name=settings.snapshot_dir):
+
+def record_data(img_url, img_type):
     try:
         response = get(img_url)
         if response.status_code == 200:
@@ -88,5 +90,6 @@ def record_data(img_url, img_type, dir_name=settings.snapshot_dir):
             save_file_to_disk(img_data, img_type)
         else:
             print("Warning: response status from image url: {}".format(response.status_code))
+    # TODO(mf): make proper error handling
     except:
         print("Error: unknown in record_data")

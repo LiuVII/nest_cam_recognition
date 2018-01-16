@@ -5,6 +5,7 @@ scikit-image
 scikit-learn
 asyncio
 aioconsole
+urllib3
 flask
 requests
 ipython
