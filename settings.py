@@ -27,7 +27,7 @@ window_name = "SigmaSpy"
 
 
 # Other
-ESC_CODE = 27
+esc_code = 27
 
 # OAuth2 URLs
 nest_auth_url = 'https://home.nest.com/login/oauth2'

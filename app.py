@@ -50,7 +50,7 @@ async def main_loop():
     while futures:
         print("Loop")
         if params["stream"] and params["stream_pipe"]:
-            futures.append(stream_capture.read_from_stream(fps=params["fps"]))
+            futures.append(stream_capture.stream_read(params))
             params["frame_num"] += 1
         done, pending = await asyncio.wait(futures, return_when=FIRST_COMPLETED)
         pending = list(pending)

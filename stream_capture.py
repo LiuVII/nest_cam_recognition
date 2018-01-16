@@ -4,6 +4,7 @@ import subprocess as sp
 
 import settings
 
+ESC_CODE = settings.esc_code
 FFMPEG_BIN = settings.ffmpeg_bin
 # TODO(mf): Determine size and color by getting stream info
 FRAME_C = 3
@@ -29,28 +30,32 @@ async def stream_open(fps):
 
 
 def stream_close(params):
-    if params["stream_pipe"]:
-        params["stream_pipe"].kill()
+    pipe = params["stream_pipe"]
+    if pipe:
+        pipe.kill()
     params["stream_pipe"] = None
     cv2.destroyAllWindows()
 
 
 # TODO(mf): maybe wait for a command to read next frame
 # TODO(mf): check that video delay is stable
-async def stream_read(pipe):
+async def stream_read(params):
+    pipe = params["stream_pipe"]
     if not pipe:
         println("Warning: stream pipe isn't set")
         return {"warning": "stream pipe isn't set"}
     
     try:
-        # OLD(mf): raw_image = pipe.stdout.read(FRAME_SIZE)
-        raw_image, err = pipe.communicate()
-        if (err):
-          print("Error: stream error {}".format(err))
-          return {"error": "read from stream"}
+        # TODO(mf): communicate doesn't work here, figure out why:
+        raw_image = pipe.stdout.read(FRAME_SIZE)
+        # raw_image, err = pipe.communicate()
+        # if (err):
+        #   print("Error: stream error {}".format(err))
+        #   return {"error": "read from stream"}
         image = numpy.fromstring(raw_image, dtype='uint8').reshape((FRAME_Y, FRAME_X, FRAME_C))
         cv2.imshow(WINDOW_NAME, image)
-        cv2.waitKey(5)
+        # TODO(mf): waitKey sometimes interrupts keyboard input which stops whole app, bypass it
+        cv2.waitKey(1)
         return {"frame": image}
     
     except:

@@ -29,7 +29,7 @@ async def parse_command(command, params, futures):
             # TODO(mf): take a snapshot
             # futures.append(snapshot(params))
             pass
-        elif command.split() > 1 and command.split()[0] == "fps":
+        elif len(command.split()) > 1 and command.split()[0] == "fps":
             fps = int(command.split()[1])
             if fps > 0:
                 params["fps"] = fps
