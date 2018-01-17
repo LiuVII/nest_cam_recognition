@@ -10,6 +10,9 @@ import settings
 import stream_capture
 
 
+DEFAULT_FPS = settings.default_fps
+
+
 async def parse_result(result, futures, params):
     if "frame" in result:
         if params["process"]:
@@ -25,7 +28,7 @@ async def parse_result(result, futures, params):
     elif "error":
         print("Error: {}".format(result["error"]))
     else:
-        print("Info: some result recieved")
+        print("Info: some result received")
 
 
 # TODO(mf): make a class instead of a dict
@@ -43,8 +46,7 @@ def init_params():
     }
 
 
-async def main_loop():
-    params = init_params()
+async def main_loop(params):
     futures = [control.read_from_input()]
     while futures:
         print("Loop")
@@ -57,18 +59,21 @@ async def main_loop():
         futures = pending
 
 
-print("Info: started")
-data_utils.set_dirs([settings.snapshot_dir, settings.known_faces_dir, settings.results_dir, settings.interactions_dir])
-print("Info: dirs setup")
-file_names = []
+async def assessment_loop(params):
+    # TODO(mf): calculate face recognition sensitivity level
+    params["known_faces"], params["file_names"] = await process_frame.get_faces(remove=False)
+    # TODO(mf): calculate processing speed based on known faces and some face example
+    pass
 
-# TODO(mf): make async
-# TODO(mf): calculate face recognition sensitivity level
-# known_faces = get_faces(file_names=file_names, remove=False)
-# TODO(mf): calculate processing speed based on known faces and some face example
-DEFAULT_FPS = 4
+
+print("Info: started")
+data_utils.set_dirs(settings.dirs)
+print("Info: dirs setup")
+init_params = init_params()
+print("Info: params initialized")
 
 ioloop = asyncio.get_event_loop()
-ioloop.run_until_complete(main_loop())
+ioloop.run_until_complete(assessment_loop(init_params))
+ioloop.run_until_complete(main_loop(init_params))
 ioloop.close()
 print("Info: finished")

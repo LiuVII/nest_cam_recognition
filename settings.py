@@ -18,12 +18,13 @@ snapshot_dir = "./snapshots"
 known_faces_dir = "./known_faces"
 results_dir = "./results"
 interactions_dir = "./interactions"
-unknown = "unknown"
+unknown = "{}/unknown".format(results_dir)
+dirs = [snapshot_dir, known_faces_dir, results_dir, interactions_dir, unknown]
 
 # Stream
 ffmpeg_bin = "ffmpeg"
 window_name = "SigmaSpy"
-
+default_fps = 4
 
 # Other
 esc_code = 27

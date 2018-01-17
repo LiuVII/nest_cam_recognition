@@ -25,28 +25,30 @@ async def process_frame(frame, params):
     return {"process_result": persons}
 
 
-async def get_faces(file_names, faces_dir=settings.known_faces_dir, remove=True):
-    if not file_names:
-        file_names = []
-    faces = []
+async def get_face(image_file, remove):
+    try:
+        img = face_recognition.load_image_file(image_file)
+        faces = face_recognition.face_encodings(img)
 
-    for img_type in VALID_IMG_TYPES:
-        for img_file in glob.glob('{}/*{}'.format(faces_dir, img_type)):
-            try:
-                img = face_recognition.load_image_file(img_file)
-                img_encoded = face_recognition.face_encodings(img)
-                file_names += [img_file] * len(img_encoded)
-                if len(img_encoded) > 1:
-                    print("Info: file {} contains {} faces".format(img_file, len(img_encoded)))
-                elif len(img_encoded) == 0 and remove:
-                    os.remove(img_file)
-                faces += img_encoded
-            # TODO(mf): make proper error handling
-            except:
-                print("Error: failed to open and recognize single image")
+    # TODO(mf): make proper error handling
+    except:
+        print("Error: failed to open and recognize single image")
+        faces = []
 
+    file_names = [image_file] * len(faces)
+    if len(faces) > 1:
+        print("Info: file {} contains {} faces".format(image_file, len(faces)))
+    elif len(faces) == 0 and remove:
+        os.remove(image_file)
+    return file_names, faces
+
+
+async def get_faces(faces_dir=settings.known_faces_dir, remove=True):
+    img_files = [file for img_type in VALID_IMG_TYPES for file in glob.glob('{}/*{}'.format(faces_dir, img_type))]
+    get_faces_result = await asyncio.gather(*[get_face(img_file, remove) for img_file in img_files])
+    file_names, faces = map(list, zip(*get_faces_result))
     print("Info: total number of faces in {}: {}".format(faces_dir, len(faces)))
-    return faces
+    return faces, file_names
 
 
 async def recognize_faces(known_faces, file_names, save_res=True, move=True, remove=True):
@@ -54,9 +56,8 @@ async def recognize_faces(known_faces, file_names, save_res=True, move=True, rem
         print("Info: recognition isn't active due to zero known faces in folder")
         return []
     compare_results = []
-    unknown_files = []
     # TODO(mf): instead of simply awaiting run async for every unknown and gather futures
-    unknown_faces = await get_faces(unknown_files, settings.snapshot_dir, remove)
+    unknown_faces, unknown_files = await get_faces(settings.snapshot_dir, remove)
 
     if len(unknown_faces) > 0:
         name_tags = [data_utils.get_name_tag(file_name) for file_name in file_names]
